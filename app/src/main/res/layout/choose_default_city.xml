@@ -5,7 +5,7 @@
     android:orientation="vertical">
 
     <ListView
-        android:id="@+id/city_list_view"
+        android:id="@+id/city_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="10"/>
@@ -15,6 +15,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="选择"/>
+        android:text="选择城市"/>
 
 </LinearLayout>

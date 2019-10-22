@@ -1,6 +1,7 @@
 package com.assignment.miniweather;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -49,8 +50,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Button changeCity = findViewById(R.id.changeCity);
         initViewCtrl();
+        Button changeCity = findViewById(R.id.changeCity);
         updateWeatherInfo(location,key);
         changeCity.setOnClickListener(this);
     }
@@ -58,24 +59,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v){
         if(v.getId() == R.id.changeCity){
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("http://www.baidu.com"));
-            startActivity(intent);
+            Intent intent = new Intent(MainActivity.this,ChooseDefaultCityActivity.class);
+            startActivityForResult(intent,1);
         }
     }
 
-    private void updateWeatherInfo(String location,String key){
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==1 && resultCode==RESULT_OK){
+            location = data.getStringExtra("returnedCityName");
+            updateWeatherInfo(location,key);
+        }
+        else{
+            Log.i(TAG, "onActivityResult: choose city error");
+        }
+    }
+
+    private void updateWeatherInfo(String location, String key){
         WeatherData.setUrl(location,key);
         new Thread(new Runnable() {
             @Override
             public void run() {
-                int requestTime = 0;
                 Message message = new Message();
-                while((WeatherData.getForecast_code()&WeatherData.getNow_code())!=200&&requestTime<=10){
-                    WeatherData.createHttpConnection();
-                    requestTime++;
-                }
-                if(requestTime>10){
+                WeatherData.createHttpConnection();
+                if((WeatherData.getForecast_code()&WeatherData.getNow_code())!=200){
                     Log.e(TAG, "HttpURLConnection Failed");
                 }
                 else{
@@ -95,12 +103,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setViewCtrl(){
-        nowWeatherInfo = new NowWeatherInfo(WeatherData.getNow_weatherInfo());
-        forecastWeatherInfo = new ForecastWeatherInfo(WeatherData.getForecast_weatherInfo());
-        time.setText(nowWeatherInfo.getTime());
-        tmp.setText(nowWeatherInfo.getTmp());
-        weatherCond.setText(nowWeatherInfo.getCondTxt()+"（实时）");
-        windDir.setText(nowWeatherInfo.getWindDir()+nowWeatherInfo.getWindSc()+"级");
-        tmpRange.setText(forecastWeatherInfo.getTmpMin()+"~"+forecastWeatherInfo.getTmpMax()+"℃");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                nowWeatherInfo = new NowWeatherInfo(WeatherData.getNow_weatherInfo());
+                forecastWeatherInfo = new ForecastWeatherInfo(WeatherData.getForecast_weatherInfo());
+                time.setText(nowWeatherInfo.getTime()+' '+location);
+                tmp.setText(nowWeatherInfo.getTmp());
+                weatherCond.setText(nowWeatherInfo.getCondTxt());
+                windDir.setText(nowWeatherInfo.getWindDir()+nowWeatherInfo.getWindSc()+"级");
+                tmpRange.setText(forecastWeatherInfo.getTmpMin()+"~"+forecastWeatherInfo.getTmpMax()+"℃");
+            }
+        });
     }
 }
